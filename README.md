@@ -1,1 +1,1 @@
-"# I2C-camera-interface-OV7670" 
+# I2C-camera-interface-OV7670
