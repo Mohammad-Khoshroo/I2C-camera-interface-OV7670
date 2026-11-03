@@ -1,180 +1,206 @@
 `timescale 1ns / 1ps
 
-module sccb_id_reader #(
-    parameter [7:0]  SLAVE_WR = 8'h42,
-    parameter [7:0]  SLAVE_RD = 8'h43,
-    parameter [7:0]  REG_PID  = 8'h0A,
-    parameter [7:0]  REG_VER  = 8'h0B,
-    parameter [7:0]  PID_EXP  = 8'h76,
-    parameter [7:0]  VER_EXP  = 8'h73,
-    parameter [15:0] CLK_DIV  = 16'd250     // 100 MHz -> SCL = 100 kHz
-)(
+module ov7670_id_reader (
     input  wire        clk,
     input  wire        rst_n,
-    input  wire        start,          // button (level), one run per rising edge
+    input  wire        start_btn,   // Debounced button input
 
-    // interface to i2c_master_core
+    // To the I2C core
     output reg         start_txn,
     output reg         gen_start,
     output reg         stop_bit,
     output reg         rw_bit,
     output reg         nack_on_read,
     output reg  [7:0]  tx_data,
-    output wire [15:0] clk_div,
     input  wire [7:0]  rx_data,
+    input  wire        busy,
     input  wire        done,
     input  wire        ack_error,
 
-    // results
-    output reg         id_match,       // 1: PID and VER both matched (LED)
-    output reg         busy,           // run in progress
-    output reg         finished,       // 1-cycle pulse at end of a run
-    output reg         ack_fail,       // some byte was not ACKed
-    output reg         id_mismatch,    // read completed but IDs differ
+    // Status & ILA Probes
+    output reg         id_ok_led,
+    output reg         id_fail_led,
+    output wire        probe_busy,
     output reg  [7:0]  pid_val,
     output reg  [7:0]  ver_val
 );
 
-    assign clk_div = CLK_DIV;
+    localparam DEV_ADDR_W = 8'h42,
+               DEV_ADDR_R = 8'h43,
+               PID_REG    = 8'h0A,
+               VER_REG    = 8'h0B,
+               PID_VAL    = 8'h76,
+               VER_VAL    = 8'h73;
 
-    // ---------- start synchronizer + rising-edge detector ----------
-    reg s1, s2, s3;
+    localparam [3:0]
+        IDLE        = 4'd0,
+        // PID Read (0x0A): 2-phase write + STOP, then 2-phase read + STOP
+        W_PID_ADDR  = 4'd1,
+        W_PID_REG   = 4'd2,
+        R_PID_ADDR  = 4'd3,
+        R_PID_DATA  = 4'd4,
+        // VER Read (0x0B): 2-phase write + STOP, then 2-phase read + STOP
+        W_VER_ADDR  = 4'd5,
+        W_VER_REG   = 4'd6,
+        R_VER_ADDR  = 4'd7,
+        R_VER_DATA  = 4'd8,
+        CHECK       = 4'd9,
+        FINISH      = 4'd10;
+
+    reg [3:0] state;
+    reg       start_btn_d;
+    reg       err_flag;
+
+    // Edge detection for push button
+    wire btn_pressed = start_btn && !start_btn_d;
+
+    // Bus is considered busy whenever the FSM is running or the I2C core reports busy
+    assign probe_busy = (state != IDLE && state != FINISH) || busy;
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            s1 <= 1'b0; s2 <= 1'b0; s3 <= 1'b0;
-        end else begin
-            s1 <= start; s2 <= s1; s3 <= s2;
-        end
-    end
-    wire start_pulse = s2 & ~s3;
-
-    // ---------- FSM ----------
-    localparam [2:0] S_IDLE   = 3'd0,
-                     S_LOAD   = 3'd1,
-                     S_FIRE   = 3'd2,
-                     S_WAIT   = 3'd3,
-                     S_CHECK  = 3'd4,
-                     S_FINISH = 3'd5;
-
-    reg [2:0] state;
-    reg [1:0] step;       // byte index inside one register read (0..3)
-    reg       reg_sel;    // 0: PID, 1: VER
-    reg       err;        // sticky ACK error of the current run
-
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            state        <= S_IDLE;
-            step         <= 2'd0;
-            reg_sel      <= 1'b0;
-            err          <= 1'b0;
+            state        <= IDLE;
             start_txn    <= 1'b0;
             gen_start    <= 1'b0;
             stop_bit     <= 1'b0;
             rw_bit       <= 1'b0;
-            nack_on_read <= 1'b1;
-            tx_data      <= 8'd0;
-            id_match     <= 1'b0;
-            busy         <= 1'b0;
-            finished     <= 1'b0;
-            ack_fail     <= 1'b0;
-            id_mismatch  <= 1'b0;
-            pid_val      <= 8'd0;
-            ver_val      <= 8'd0;
+            nack_on_read <= 1'b0;
+            tx_data      <= 8'h00;
+            pid_val      <= 8'h00;
+            ver_val      <= 8'h00;
+            id_ok_led    <= 1'b0;
+            id_fail_led  <= 1'b0;
+            err_flag     <= 1'b0;
+            start_btn_d  <= 1'b0;
         end else begin
-            start_txn <= 1'b0;
-            finished  <= 1'b0;
+            start_btn_d <= start_btn;
+            start_txn   <= 1'b0; // Default 1-cycle pulse
+
+            // Track any ACK failure received during any transaction
+            if (done && ack_error)
+                err_flag <= 1'b1;
 
             case (state)
-                S_IDLE: begin
-                    if (start_pulse) begin
-                        busy        <= 1'b1;
-                        id_match    <= 1'b0;
-                        ack_fail    <= 1'b0;
-                        id_mismatch <= 1'b0;
-                        err         <= 1'b0;
-                        pid_val     <= 8'd0;
-                        ver_val     <= 8'd0;
-                        step        <= 2'd0;
-                        reg_sel     <= 1'b0;
-                        state       <= S_LOAD;
+                IDLE: begin
+                    if (btn_pressed) begin
+                        id_ok_led   <= 1'b0;
+                        id_fail_led <= 1'b0;
+                        err_flag    <= 1'b0;
+                        pid_val     <= 8'h00;
+                        ver_val     <= 8'h00;
+
+                        tx_data     <= DEV_ADDR_W;
+                        rw_bit      <= 1'b0;
+                        gen_start   <= 1'b1;
+                        stop_bit    <= 1'b0;
+                        start_txn   <= 1'b1;
+                        state       <= W_PID_ADDR;
                     end
                 end
 
-                // set core inputs for the current byte
-                S_LOAD: begin
-                    nack_on_read <= 1'b1;
-                    case (step)
-                        2'd0: begin
-                            tx_data <= SLAVE_WR; gen_start <= 1'b1;
-                            stop_bit <= 1'b0;    rw_bit <= 1'b0;
-                        end
-                        2'd1: begin
-                            tx_data <= reg_sel ? REG_VER : REG_PID; gen_start <= 1'b0;
-                            stop_bit <= 1'b1;    rw_bit <= 1'b0;
-                        end
-                        2'd2: begin
-                            tx_data <= SLAVE_RD; gen_start <= 1'b1;
-                            stop_bit <= 1'b0;    rw_bit <= 1'b0;
-                        end
-                        2'd3: begin
-                            tx_data <= 8'h00;    gen_start <= 1'b0;
-                            stop_bit <= 1'b1;    rw_bit <= 1'b1;
-                        end
-                    endcase
-                    state <= S_FIRE;
-                end
-
-                // one-cycle start pulse to the core
-                S_FIRE: begin
-                    start_txn <= 1'b1;
-                    state     <= S_WAIT;
-                end
-
-                // wait for the core to finish this byte
-                S_WAIT: begin
+                W_PID_ADDR: begin
                     if (done) begin
-                        if (ack_error) err <= 1'b1;
-                        if (step == 2'd3) begin
-                            if (reg_sel) ver_val <= rx_data;
-                            else         pid_val <= rx_data;
-                        end
-                        state <= S_CHECK;
+                        tx_data   <= PID_REG;
+                        rw_bit    <= 1'b0;
+                        gen_start <= 1'b0;
+                        stop_bit  <= 1'b1; // SCCB requires STOP after setting sub-address
+                        start_txn <= 1'b1;
+                        state     <= W_PID_REG;
                     end
                 end
 
-                S_CHECK: begin
-                    if (step == 2'd1 || step == 2'd3) begin
-                        // a transaction (ending with STOP) just finished
-                        if (err) begin
-                            state <= S_FINISH;               // abort run
-                        end else if (step == 2'd3) begin
-                            if (reg_sel) begin
-                                state <= S_FINISH;           // both regs read
-                            end else begin
-                                reg_sel <= 1'b1;
-                                step    <= 2'd0;
-                                state   <= S_LOAD;
-                            end
-                        end else begin
-                            step  <= step + 2'd1;
-                            state <= S_LOAD;
-                        end
+                W_PID_REG: begin
+                    if (done) begin
+                        tx_data   <= DEV_ADDR_R;
+                        rw_bit    <= 1'b0; // Address byte is transmitted by master
+                        gen_start <= 1'b1; // New START
+                        stop_bit  <= 1'b0;
+                        start_txn <= 1'b1;
+                        state     <= R_PID_ADDR;
+                    end
+                end
+
+                R_PID_ADDR: begin
+                    if (done) begin
+                        rw_bit       <= 1'b1; // Master reads incoming byte
+                        gen_start    <= 1'b0;
+                        stop_bit     <= 1'b1;
+                        nack_on_read <= 1'b1; // Master sends NACK on final byte
+                        start_txn    <= 1'b1;
+                        state        <= R_PID_DATA;
+                    end
+                end
+
+                R_PID_DATA: begin
+                    if (done) begin
+                        pid_val   <= rx_data;
+                        tx_data   <= DEV_ADDR_W;
+                        rw_bit    <= 1'b0;
+                        gen_start <= 1'b1;
+                        stop_bit  <= 1'b0;
+                        start_txn <= 1'b1;
+                        state     <= W_VER_ADDR;
+                    end
+                end
+
+                W_VER_ADDR: begin
+                    if (done) begin
+                        tx_data   <= VER_REG;
+                        rw_bit    <= 1'b0;
+                        gen_start <= 1'b0;
+                        stop_bit  <= 1'b1; // STOP after setting sub-address
+                        start_txn <= 1'b1;
+                        state     <= W_VER_REG;
+                    end
+                end
+
+                W_VER_REG: begin
+                    if (done) begin
+                        tx_data   <= DEV_ADDR_R;
+                        rw_bit    <= 1'b0;
+                        gen_start <= 1'b1; // New START
+                        stop_bit  <= 1'b0;
+                        start_txn <= 1'b1;
+                        state     <= R_VER_ADDR;
+                    end
+                end
+
+                R_VER_ADDR: begin
+                    if (done) begin
+                        rw_bit       <= 1'b1;
+                        gen_start    <= 1'b0;
+                        stop_bit     <= 1'b1;
+                        nack_on_read <= 1'b1;
+                        start_txn    <= 1'b1;
+                        state        <= R_VER_DATA;
+                    end
+                end
+
+                R_VER_DATA: begin
+                    if (done) begin
+                        ver_val <= rx_data;
+                        state   <= CHECK;
+                    end
+                end
+
+                CHECK: begin
+                    if (!err_flag && pid_val == PID_VAL && ver_val == VER_VAL) begin
+                        id_ok_led   <= 1'b1;
+                        id_fail_led <= 1'b0;
                     end else begin
-                        step  <= step + 2'd1;
-                        state <= S_LOAD;
+                        id_ok_led   <= 1'b0;
+                        id_fail_led <= 1'b1;
                     end
+                    state <= FINISH;
                 end
 
-                S_FINISH: begin
-                    busy        <= 1'b0;
-                    finished    <= 1'b1;
-                    ack_fail    <= err;
-                    id_mismatch <= ~err & ~((pid_val == PID_EXP) & (ver_val == VER_EXP));
-                    id_match    <= ~err &  ((pid_val == PID_EXP) & (ver_val == VER_EXP));
-                    state       <= S_IDLE;
+                FINISH: begin
+                    // Wait until the user presses the button again to start a new check
+                    if (btn_pressed)
+                        state <= IDLE;
                 end
 
-                default: state <= S_IDLE;
+                default: state <= IDLE;
             endcase
         end
     end
