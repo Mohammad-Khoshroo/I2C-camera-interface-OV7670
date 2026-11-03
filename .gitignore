@@ -1,0 +1,55 @@
+obj_dir/
+obj_dir
+
+
+build/
+build
+
+
+*.vcd
+
+# ==========================================
+# Vivado Auto-Generated Directories
+# ==========================================
+*.cache/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+*.gen/
+.Xil/
+
+# ==========================================
+# Keep IP (.xci) & Block Design (.bd) Configs, Ignore Generated Output Products
+# ==========================================
+*.srcs/sources_1/ip/*/*
+!*.srcs/sources_1/ip/*/*.xci
+*.srcs/sources_1/bd/*/*
+!*.srcs/sources_1/bd/*/*.bd
+
+# ==========================================
+# Vivado Logs, Journals & Waveforms
+# ==========================================
+*.jou
+*.log
+*.str
+*.wdb
+*.vcd
+*.pb
+*.dcp
+*.bit
+*.ltx
+webtalk*
+
+# ==========================================
+# Verilator & OS Temporary Files
+# ==========================================
+obj_dir/
+.DS_Store
+Thumbs.db
+*~
+
+
+*.typ
+# VRDocs engine directory
+.vrdocs/

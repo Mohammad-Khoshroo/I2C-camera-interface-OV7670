@@ -135,7 +135,6 @@ module tb_i2c_core;
             end else
                 $display("[%0t] TB PASS: %0s  = 0x%02h", $time, msg, got);
         end
-        end
     endtask
 
     // ---------------- test sequence ----------------
@@ -187,7 +186,6 @@ module tb_i2c_core;
         else
             $display("[%0t] TB RESULT: FAILED  (%0d check(s), %0d unexpected NACK)", $time, errors, unexp_nack);
         $finish;
-    end
     end
 
     // watchdog

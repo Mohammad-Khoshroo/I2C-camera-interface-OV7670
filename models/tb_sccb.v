@@ -138,7 +138,6 @@ module tb_sccb;
             end else
                 $display("[%0t] TB PASS: %0s = %0b", $time, msg, got);
         end
-        end
     endtask
 
     task check32;
@@ -151,7 +150,6 @@ module tb_sccb;
                 $display("[%0t] TB FAIL: %0s  got=%0d  expected=%0d", $time, msg, got, expv);
             end else
                 $display("[%0t] TB PASS: %0s = %0d", $time, msg, got);
-        end
         end
     endtask
 
