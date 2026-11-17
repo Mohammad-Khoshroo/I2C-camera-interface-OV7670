@@ -48,7 +48,8 @@ module i2c_master_core (
     reg        r_rw_bit;
     reg        r_nack;
 
-    wire tick = (div_cnt >= clk_div - 1'b1);
+    wire [15:0] eff_clk_div = (clk_div <= 16'd1 || clk_div == 16'hFFFF) ? 16'd250 : clk_div;
+    wire tick = (div_cnt >= eff_clk_div - 1'b1);
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin

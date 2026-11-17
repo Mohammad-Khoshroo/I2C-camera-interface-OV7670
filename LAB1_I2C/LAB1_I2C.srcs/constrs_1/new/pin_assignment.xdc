@@ -1,0 +1,17 @@
+set_property IOSTANDARD LVCMOS33 [get_ports XCLK_out]
+set_property IOSTANDARD LVCMOS33 [get_ports clk_in1_0]
+create_clock -period 20.000 [get_ports clk_in1_0]
+
+set_property IOSTANDARD LVCMOS33 [get_ports id_ok_LED]
+set_property IOSTANDARD LVCMOS33 [get_ports reset_0]
+set_property IOSTANDARD LVCMOS33 [get_ports {pushButton_1[0]}]
+set_property PACKAGE_PIN H16 [get_ports XCLK_out]
+set_property PACKAGE_PIN U18 [get_ports clk_in1_0]
+set_property PACKAGE_PIN R19 [get_ports id_ok_LED]
+set_property PACKAGE_PIN U19 [get_ports reset_0]
+set_property PACKAGE_PIN E17 [get_ports scl]
+set_property PACKAGE_PIN D18 [get_ports sda]
+set_property PACKAGE_PIN G14 [get_ports {pushButton_1[0]}]
+
+set_property IOSTANDARD LVCMOS33 [get_ports {scl sda}]
+set_property PULLTYPE PULLUP [get_ports {scl sda}]

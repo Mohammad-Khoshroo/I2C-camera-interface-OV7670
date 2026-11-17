@@ -48,13 +48,13 @@ module sccb_env #(
         .sda_o(sda_o), .sda_t(sda_t), .sda_i(sda_i)
     );
 
-    sccb_id_reader reader (
-        .clk(clk), .rst_n(rst_n), .start(start),
+    ov7670_id_reader reader (
+        .clk(clk), .rst_n(rst_n), .start(start), .start_btn(1'b0),
         .start_txn(start_txn), .gen_start(gen_start), .stop_bit(stop_bit),
         .rw_bit(rw_bit), .nack_on_read(nack_on_read),
         .tx_data(tx_data), .clk_div(clk_div),
-        .rx_data(rx_data), .done(core_done), .ack_error(core_ack_error),
-        .id_match(id_match), .busy(busy), .finished(finished),
+        .rx_data(rx_data), .busy(core_busy), .done(core_done), .ack_error(core_ack_error),
+        .id_match(id_match), .probe_busy(busy), .finished(finished),
         .ack_fail(ack_fail), .id_mismatch(id_mismatch),
         .pid_val(pid_val), .ver_val(ver_val)
     );

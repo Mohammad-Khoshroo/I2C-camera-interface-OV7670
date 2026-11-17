@@ -1,45 +1,66 @@
 `timescale 1ns / 1ps
 
-module ov7670_id_reader (
+module ov7670_id_reader #(
+    parameter [7:0]  DEV_ADDR_W = 8'h42,
+    parameter [7:0]  DEV_ADDR_R = 8'h43,
+    parameter [7:0]  PID_REG    = 8'h0A,
+    parameter [7:0]  VER_REG    = 8'h0B,
+    parameter [7:0]  PID_EXP    = 8'h76,
+    parameter [7:0]  VER_EXP    = 8'h73,
+    parameter [15:0] CLK_DIV    = 16'd250
+)(
     input  wire        clk,
     input  wire        rst_n,
-    input  wire        start_btn,   // Debounced button input
+    input  wire        start,          // Testbench input
+    input  wire        start_btn,      // Board push-button input
 
-    // To the I2C core
+    // Interface to i2c_master_core
     output reg         start_txn,
     output reg         gen_start,
     output reg         stop_bit,
     output reg         rw_bit,
     output reg         nack_on_read,
     output reg  [7:0]  tx_data,
+    output wire [15:0] clk_div,
     input  wire [7:0]  rx_data,
-    input  wire        busy,
+    input  wire        busy,           // from core
     input  wire        done,
     input  wire        ack_error,
 
-    // Status & ILA Probes
-    output reg         id_ok_led,
-    output reg         id_fail_led,
-    output wire        probe_busy,
+    // Status outputs for Testbench & Hardware
+    output reg         id_match,       // 1: PID & VER match
+    output reg         id_mismatch,    // 1: IDs differ
+    output reg         ack_fail,       // 1: ACK error
+    output reg         finished,       // 1-cycle pulse at end
+    output wire        id_ok_led,      // Board LED (match)
+    output wire        id_fail_led,    // Board LED (mismatch or error)
+    output wire        probe_busy,     // Busy status
     output reg  [7:0]  pid_val,
     output reg  [7:0]  ver_val
 );
 
-    localparam DEV_ADDR_W = 8'h42,
-               DEV_ADDR_R = 8'h43,
-               PID_REG    = 8'h0A,
-               VER_REG    = 8'h0B,
-               PID_VAL    = 8'h76,
-               VER_VAL    = 8'h73;
+    assign clk_div     = CLK_DIV;
+    assign id_ok_led   = id_match;
+    assign id_fail_led = id_mismatch | ack_fail;
+
+    // Edge-detect for start signal (synchronizer + rising edge)
+    wire start_raw = start | start_btn;
+    reg  s1, s2, s3;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            s1 <= 1'b0; s2 <= 1'b0; s3 <= 1'b0;
+        end else begin
+            s1 <= start_raw; s2 <= s1; s3 <= s2;
+        end
+    end
+    wire start_pulse = s2 & ~s3;
 
     localparam [3:0]
         IDLE        = 4'd0,
-        // PID Read (0x0A): 2-phase write + STOP, then 2-phase read + STOP
         W_PID_ADDR  = 4'd1,
         W_PID_REG   = 4'd2,
         R_PID_ADDR  = 4'd3,
         R_PID_DATA  = 4'd4,
-        // VER Read (0x0B): 2-phase write + STOP, then 2-phase read + STOP
         W_VER_ADDR  = 4'd5,
         W_VER_REG   = 4'd6,
         R_VER_ADDR  = 4'd7,
@@ -48,18 +69,14 @@ module ov7670_id_reader (
         FINISH      = 4'd10;
 
     reg [3:0] state;
-    reg       start_btn_d;
-    reg       err_flag;
+    reg       running;
 
-    // Edge detection for push button
-    wire btn_pressed = start_btn && !start_btn_d;
-
-    // Bus is considered busy whenever the FSM is running or the I2C core reports busy
-    assign probe_busy = (state != IDLE && state != FINISH) || busy;
+    assign probe_busy = running | busy;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             state        <= IDLE;
+            running      <= 1'b0;
             start_txn    <= 1'b0;
             gen_start    <= 1'b0;
             stop_bit     <= 1'b0;
@@ -68,24 +85,22 @@ module ov7670_id_reader (
             tx_data      <= 8'h00;
             pid_val      <= 8'h00;
             ver_val      <= 8'h00;
-            id_ok_led    <= 1'b0;
-            id_fail_led  <= 1'b0;
-            err_flag     <= 1'b0;
-            start_btn_d  <= 1'b0;
+            id_match     <= 1'b0;
+            id_mismatch  <= 1'b0;
+            ack_fail     <= 1'b0;
+            finished     <= 1'b0;
         end else begin
-            start_btn_d <= start_btn;
-            start_txn   <= 1'b0; // Default 1-cycle pulse
-
-            // Track any ACK failure received during any transaction
-            if (done && ack_error)
-                err_flag <= 1'b1;
+            start_txn <= 1'b0; // Default 1-cycle pulse
+            finished  <= 1'b0;
 
             case (state)
                 IDLE: begin
-                    if (btn_pressed) begin
-                        id_ok_led   <= 1'b0;
-                        id_fail_led <= 1'b0;
-                        err_flag    <= 1'b0;
+                    running <= 1'b0;
+                    if (start_pulse) begin
+                        running     <= 1'b1;
+                        id_match    <= 1'b0;
+                        id_mismatch <= 1'b0;
+                        ack_fail    <= 1'b0;
                         pid_val     <= 8'h00;
                         ver_val     <= 8'h00;
 
@@ -100,34 +115,49 @@ module ov7670_id_reader (
 
                 W_PID_ADDR: begin
                     if (done) begin
-                        tx_data   <= PID_REG;
-                        rw_bit    <= 1'b0;
-                        gen_start <= 1'b0;
-                        stop_bit  <= 1'b1; // SCCB requires STOP after setting sub-address
-                        start_txn <= 1'b1;
-                        state     <= W_PID_REG;
+                        if (ack_error) begin
+                            ack_fail <= 1'b1;
+                            state    <= FINISH;
+                        end else begin
+                            tx_data   <= PID_REG;
+                            rw_bit    <= 1'b0;
+                            gen_start <= 1'b0;
+                            stop_bit  <= 1'b1; // SCCB STOP after setting register
+                            start_txn <= 1'b1;
+                            state     <= W_PID_REG;
+                        end
                     end
                 end
 
                 W_PID_REG: begin
                     if (done) begin
-                        tx_data   <= DEV_ADDR_R;
-                        rw_bit    <= 1'b0; // Address byte is transmitted by master
-                        gen_start <= 1'b1; // New START
-                        stop_bit  <= 1'b0;
-                        start_txn <= 1'b1;
-                        state     <= R_PID_ADDR;
+                        if (ack_error) begin
+                            ack_fail <= 1'b1;
+                            state    <= FINISH;
+                        end else begin
+                            tx_data   <= DEV_ADDR_R;
+                            rw_bit    <= 1'b0;
+                            gen_start <= 1'b1; // New START
+                            stop_bit  <= 1'b0;
+                            start_txn <= 1'b1;
+                            state     <= R_PID_ADDR;
+                        end
                     end
                 end
 
                 R_PID_ADDR: begin
                     if (done) begin
-                        rw_bit       <= 1'b1; // Master reads incoming byte
-                        gen_start    <= 1'b0;
-                        stop_bit     <= 1'b1;
-                        nack_on_read <= 1'b1; // Master sends NACK on final byte
-                        start_txn    <= 1'b1;
-                        state        <= R_PID_DATA;
+                        if (ack_error) begin
+                            ack_fail <= 1'b1;
+                            state    <= FINISH;
+                        end else begin
+                            rw_bit       <= 1'b1; // Read mode
+                            gen_start    <= 1'b0;
+                            stop_bit     <= 1'b1;
+                            nack_on_read <= 1'b1; // NACK on read
+                            start_txn    <= 1'b1;
+                            state        <= R_PID_DATA;
+                        end
                     end
                 end
 
@@ -145,34 +175,49 @@ module ov7670_id_reader (
 
                 W_VER_ADDR: begin
                     if (done) begin
-                        tx_data   <= VER_REG;
-                        rw_bit    <= 1'b0;
-                        gen_start <= 1'b0;
-                        stop_bit  <= 1'b1; // STOP after setting sub-address
-                        start_txn <= 1'b1;
-                        state     <= W_VER_REG;
+                        if (ack_error) begin
+                            ack_fail <= 1'b1;
+                            state    <= FINISH;
+                        end else begin
+                            tx_data   <= VER_REG;
+                            rw_bit    <= 1'b0;
+                            gen_start <= 1'b0;
+                            stop_bit  <= 1'b1; // STOP after setting register
+                            start_txn <= 1'b1;
+                            state     <= W_VER_REG;
+                        end
                     end
                 end
 
                 W_VER_REG: begin
                     if (done) begin
-                        tx_data   <= DEV_ADDR_R;
-                        rw_bit    <= 1'b0;
-                        gen_start <= 1'b1; // New START
-                        stop_bit  <= 1'b0;
-                        start_txn <= 1'b1;
-                        state     <= R_VER_ADDR;
+                        if (ack_error) begin
+                            ack_fail <= 1'b1;
+                            state    <= FINISH;
+                        end else begin
+                            tx_data   <= DEV_ADDR_R;
+                            rw_bit    <= 1'b0;
+                            gen_start <= 1'b1; // New START
+                            stop_bit  <= 1'b0;
+                            start_txn <= 1'b1;
+                            state     <= R_VER_ADDR;
+                        end
                     end
                 end
 
                 R_VER_ADDR: begin
                     if (done) begin
-                        rw_bit       <= 1'b1;
-                        gen_start    <= 1'b0;
-                        stop_bit     <= 1'b1;
-                        nack_on_read <= 1'b1;
-                        start_txn    <= 1'b1;
-                        state        <= R_VER_DATA;
+                        if (ack_error) begin
+                            ack_fail <= 1'b1;
+                            state    <= FINISH;
+                        end else begin
+                            rw_bit       <= 1'b1; // Read mode
+                            gen_start    <= 1'b0;
+                            stop_bit     <= 1'b1;
+                            nack_on_read <= 1'b1;
+                            start_txn    <= 1'b1;
+                            state        <= R_VER_DATA;
+                        end
                     end
                 end
 
@@ -184,20 +229,20 @@ module ov7670_id_reader (
                 end
 
                 CHECK: begin
-                    if (!err_flag && pid_val == PID_VAL && ver_val == VER_VAL) begin
-                        id_ok_led   <= 1'b1;
-                        id_fail_led <= 1'b0;
+                    if (pid_val == PID_EXP && ver_val == VER_EXP) begin
+                        id_match    <= 1'b1;
+                        id_mismatch <= 1'b0;
                     end else begin
-                        id_ok_led   <= 1'b0;
-                        id_fail_led <= 1'b1;
+                        id_match    <= 1'b0;
+                        id_mismatch <= 1'b1;
                     end
                     state <= FINISH;
                 end
 
                 FINISH: begin
-                    // Wait until the user presses the button again to start a new check
-                    if (btn_pressed)
-                        state <= IDLE;
+                    running  <= 1'b0;
+                    finished <= 1'b1; // 1-cycle pulse
+                    state    <= IDLE;
                 end
 
                 default: state <= IDLE;

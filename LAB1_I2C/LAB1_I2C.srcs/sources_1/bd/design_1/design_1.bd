@@ -1,13 +1,699 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0x0",
+      "boundary_crc": "0x1CBDEFE84521D095",
+      "device": "xc7z020clg400-2",
       "gen_directory": "../../../../LAB1_I2C.gen/sources_1/bd/design_1",
       "name": "design_1",
       "rev_ctrl_bd_flag": "RevCtrlBdOff",
       "synth_flow_mode": "Hierarchical",
       "tool_version": "2022.2"
     },
-    "design_tree": {}
+    "design_tree": {
+      "clk_wiz_0": "",
+      "util_vector_logic_0": "",
+      "util_vector_logic_1": "",
+      "ila_0": "",
+      "button_debouncer_0": "",
+      "my_IOBUF_0": "",
+      "my_IOBUF_1": "",
+      "i2c_master_core_0": "",
+      "ov7670_id_reader_0": ""
+    },
+    "ports": {
+      "reset_0": {
+        "type": "rst",
+        "direction": "I",
+        "parameters": {
+          "POLARITY": {
+            "value": "ACTIVE_LOW"
+          }
+        }
+      },
+      "XCLK_out": {
+        "type": "clk",
+        "direction": "O"
+      },
+      "sda": {
+        "direction": "IO"
+      },
+      "scl": {
+        "direction": "IO"
+      },
+      "pushButton_1": {
+        "direction": "I",
+        "left": "0",
+        "right": "0"
+      },
+      "id_ok_LED": {
+        "direction": "O"
+      },
+      "clk_in1_0": {
+        "type": "clk",
+        "direction": "I",
+        "parameters": {
+          "FREQ_HZ": {
+            "value": "50000000"
+          }
+        }
+      }
+    },
+    "components": {
+      "clk_wiz_0": {
+        "vlnv": "xilinx.com:ip:clk_wiz:6.0",
+        "xci_name": "design_1_clk_wiz_0_0",
+        "xci_path": "ip\\design_1_clk_wiz_0_0\\design_1_clk_wiz_0_0.xci",
+        "inst_hier_path": "clk_wiz_0",
+        "parameters": {
+          "CLKIN1_JITTER_PS": {
+            "value": "200.0"
+          },
+          "CLKOUT1_JITTER": {
+            "value": "139.128"
+          },
+          "CLKOUT1_PHASE_ERROR": {
+            "value": "154.678"
+          },
+          "CLKOUT2_JITTER": {
+            "value": "202.151"
+          },
+          "CLKOUT2_PHASE_ERROR": {
+            "value": "154.678"
+          },
+          "CLKOUT2_REQUESTED_OUT_FREQ": {
+            "value": "24"
+          },
+          "CLKOUT2_USED": {
+            "value": "true"
+          },
+          "MMCM_CLKFBOUT_MULT_F": {
+            "value": "24.000"
+          },
+          "MMCM_CLKIN1_PERIOD": {
+            "value": "20.000"
+          },
+          "MMCM_CLKIN2_PERIOD": {
+            "value": "10.0"
+          },
+          "MMCM_CLKOUT0_DIVIDE_F": {
+            "value": "12.000"
+          },
+          "MMCM_CLKOUT1_DIVIDE": {
+            "value": "50"
+          },
+          "NUM_OUT_CLKS": {
+            "value": "2"
+          },
+          "PRIM_IN_FREQ": {
+            "value": "50.0"
+          },
+          "RESET_PORT": {
+            "value": "resetn"
+          },
+          "RESET_TYPE": {
+            "value": "ACTIVE_LOW"
+          }
+        }
+      },
+      "util_vector_logic_0": {
+        "vlnv": "xilinx.com:ip:util_vector_logic:2.0",
+        "xci_name": "design_1_util_vector_logic_0_0",
+        "xci_path": "ip\\design_1_util_vector_logic_0_0\\design_1_util_vector_logic_0_0.xci",
+        "inst_hier_path": "util_vector_logic_0"
+      },
+      "util_vector_logic_1": {
+        "vlnv": "xilinx.com:ip:util_vector_logic:2.0",
+        "xci_name": "design_1_util_vector_logic_0_1",
+        "xci_path": "ip\\design_1_util_vector_logic_0_1\\design_1_util_vector_logic_0_1.xci",
+        "inst_hier_path": "util_vector_logic_1",
+        "parameters": {
+          "C_OPERATION": {
+            "value": "not"
+          },
+          "C_SIZE": {
+            "value": "1"
+          }
+        }
+      },
+      "ila_0": {
+        "vlnv": "xilinx.com:ip:ila:6.2",
+        "xci_name": "design_1_ila_0_0",
+        "xci_path": "ip\\design_1_ila_0_0\\design_1_ila_0_0.xci",
+        "inst_hier_path": "ila_0",
+        "parameters": {
+          "C_DATA_DEPTH": {
+            "value": "65536"
+          },
+          "C_MONITOR_TYPE": {
+            "value": "Native"
+          },
+          "C_NUM_OF_PROBES": {
+            "value": "4"
+          },
+          "C_PROBE0_TYPE": {
+            "value": "0"
+          },
+          "C_PROBE2_WIDTH": {
+            "value": "8"
+          },
+          "C_PROBE3_WIDTH": {
+            "value": "8"
+          }
+        }
+      },
+      "button_debouncer_0": {
+        "vlnv": "xilinx.com:module_ref:button_debouncer:1.0",
+        "xci_name": "design_1_button_debouncer_0_0",
+        "xci_path": "ip\\design_1_button_debouncer_0_0\\design_1_button_debouncer_0_0.xci",
+        "inst_hier_path": "button_debouncer_0",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "button_debouncer",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "clk": {
+            "type": "clk",
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "/clk_wiz_0_clk_out1",
+                "value_src": "ip_prop"
+              }
+            }
+          },
+          "rst_n": {
+            "type": "rst",
+            "direction": "I",
+            "parameters": {
+              "POLARITY": {
+                "value": "ACTIVE_LOW",
+                "value_src": "constant"
+              }
+            }
+          },
+          "btn_in": {
+            "direction": "I",
+            "parameters": {
+              "PortType": {
+                "value": "undef",
+                "value_src": "ip_prop"
+              },
+              "PortType.PROP_SRC": {
+                "value": "false",
+                "value_src": "ip_prop"
+              }
+            }
+          },
+          "btn_out": {
+            "direction": "O",
+            "parameters": {
+              "PortType": {
+                "value": "undef",
+                "value_src": "ip_prop"
+              },
+              "PortType.PROP_SRC": {
+                "value": "false",
+                "value_src": "ip_prop"
+              }
+            }
+          }
+        }
+      },
+      "my_IOBUF_0": {
+        "vlnv": "xilinx.com:module_ref:my_IOBUF:1.0",
+        "xci_name": "design_1_my_IOBUF_0_0",
+        "xci_path": "ip\\design_1_my_IOBUF_0_0\\design_1_my_IOBUF_0_0.xci",
+        "inst_hier_path": "my_IOBUF_0",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "my_IOBUF",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "io_in": {
+            "direction": "I"
+          },
+          "io_t": {
+            "direction": "I"
+          },
+          "io_io": {
+            "direction": "IO"
+          },
+          "io_out": {
+            "direction": "O"
+          }
+        }
+      },
+      "my_IOBUF_1": {
+        "vlnv": "xilinx.com:module_ref:my_IOBUF:1.0",
+        "xci_name": "design_1_my_IOBUF_1_0",
+        "xci_path": "ip\\design_1_my_IOBUF_1_0\\design_1_my_IOBUF_1_0.xci",
+        "inst_hier_path": "my_IOBUF_1",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "my_IOBUF",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "io_in": {
+            "direction": "I"
+          },
+          "io_t": {
+            "direction": "I"
+          },
+          "io_io": {
+            "direction": "IO"
+          },
+          "io_out": {
+            "direction": "O"
+          }
+        }
+      },
+      "i2c_master_core_0": {
+        "vlnv": "xilinx.com:module_ref:i2c_master_core:1.0",
+        "xci_name": "design_1_i2c_master_core_0_1",
+        "xci_path": "ip\\design_1_i2c_master_core_0_1\\design_1_i2c_master_core_0_1.xci",
+        "inst_hier_path": "i2c_master_core_0",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "i2c_master_core",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "clk": {
+            "type": "clk",
+            "direction": "I",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "/clk_wiz_0_clk_out1",
+                "value_src": "ip_prop"
+              }
+            }
+          },
+          "rst_n": {
+            "type": "rst",
+            "direction": "I",
+            "parameters": {
+              "POLARITY": {
+                "value": "ACTIVE_LOW",
+                "value_src": "constant"
+              }
+            }
+          },
+          "start_txn": {
+            "direction": "I"
+          },
+          "gen_start": {
+            "direction": "I"
+          },
+          "stop_bit": {
+            "direction": "I"
+          },
+          "rw_bit": {
+            "direction": "I"
+          },
+          "nack_on_read": {
+            "direction": "I"
+          },
+          "tx_data": {
+            "direction": "I",
+            "left": "7",
+            "right": "0"
+          },
+          "clk_div": {
+            "direction": "I",
+            "left": "15",
+            "right": "0",
+            "parameters": {
+              "FREQ_HZ": {
+                "value": "24000000",
+                "value_src": "ip_prop"
+              },
+              "PHASE": {
+                "value": "0.0",
+                "value_src": "ip_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "/clk_wiz_0_clk_out1",
+                "value_src": "ip_prop"
+              }
+            }
+          },
+          "rx_data": {
+            "direction": "O",
+            "left": "7",
+            "right": "0"
+          },
+          "busy": {
+            "direction": "O"
+          },
+          "ack_error": {
+            "direction": "O"
+          },
+          "done": {
+            "direction": "O"
+          },
+          "scl_o": {
+            "direction": "O"
+          },
+          "scl_t": {
+            "direction": "O"
+          },
+          "scl_i": {
+            "direction": "I"
+          },
+          "sda_o": {
+            "direction": "O"
+          },
+          "sda_t": {
+            "direction": "O"
+          },
+          "sda_i": {
+            "direction": "I"
+          }
+        }
+      },
+      "ov7670_id_reader_0": {
+        "vlnv": "xilinx.com:module_ref:ov7670_id_reader:1.0",
+        "xci_name": "design_1_ov7670_id_reader_0_0",
+        "xci_path": "ip\\design_1_ov7670_id_reader_0_0\\design_1_ov7670_id_reader_0_0.xci",
+        "inst_hier_path": "ov7670_id_reader_0",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "ov7670_id_reader",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "clk": {
+            "type": "clk",
+            "direction": "I"
+          },
+          "rst_n": {
+            "type": "rst",
+            "direction": "I",
+            "parameters": {
+              "POLARITY": {
+                "value": "ACTIVE_LOW",
+                "value_src": "constant"
+              }
+            }
+          },
+          "start": {
+            "direction": "I"
+          },
+          "start_btn": {
+            "direction": "I"
+          },
+          "start_txn": {
+            "direction": "O"
+          },
+          "gen_start": {
+            "direction": "O"
+          },
+          "stop_bit": {
+            "direction": "O"
+          },
+          "rw_bit": {
+            "direction": "O"
+          },
+          "nack_on_read": {
+            "direction": "O"
+          },
+          "tx_data": {
+            "direction": "O",
+            "left": "7",
+            "right": "0"
+          },
+          "clk_div": {
+            "direction": "O",
+            "left": "15",
+            "right": "0"
+          },
+          "rx_data": {
+            "direction": "I",
+            "left": "7",
+            "right": "0"
+          },
+          "busy": {
+            "direction": "I"
+          },
+          "done": {
+            "direction": "I"
+          },
+          "ack_error": {
+            "direction": "I"
+          },
+          "id_match": {
+            "direction": "O"
+          },
+          "id_mismatch": {
+            "direction": "O"
+          },
+          "ack_fail": {
+            "direction": "O"
+          },
+          "finished": {
+            "direction": "O"
+          },
+          "id_ok_led": {
+            "direction": "O"
+          },
+          "id_fail_led": {
+            "direction": "O"
+          },
+          "probe_busy": {
+            "direction": "O"
+          },
+          "pid_val": {
+            "direction": "O",
+            "left": "7",
+            "right": "0"
+          },
+          "ver_val": {
+            "direction": "O",
+            "left": "7",
+            "right": "0"
+          }
+        }
+      }
+    },
+    "nets": {
+      "Net": {
+        "ports": [
+          "sda",
+          "my_IOBUF_0/io_io"
+        ]
+      },
+      "Net1": {
+        "ports": [
+          "scl",
+          "my_IOBUF_1/io_io"
+        ]
+      },
+      "Op1_0_1": {
+        "ports": [
+          "pushButton_1",
+          "util_vector_logic_1/Op1"
+        ]
+      },
+      "button_debouncer_0_btn_out": {
+        "ports": [
+          "button_debouncer_0/btn_out",
+          "util_vector_logic_0/Op1"
+        ]
+      },
+      "clk_in1_0_1": {
+        "ports": [
+          "clk_in1_0",
+          "clk_wiz_0/clk_in1"
+        ]
+      },
+      "clk_wiz_0_clk_out1": {
+        "ports": [
+          "clk_wiz_0/clk_out1",
+          "button_debouncer_0/clk",
+          "ila_0/clk",
+          "i2c_master_core_0/clk",
+          "ov7670_id_reader_0/clk"
+        ]
+      },
+      "clk_wiz_0_clk_out2": {
+        "ports": [
+          "clk_wiz_0/clk_out2",
+          "XCLK_out",
+          "i2c_master_core_0/clk_div"
+        ]
+      },
+      "clk_wiz_0_locked": {
+        "ports": [
+          "clk_wiz_0/locked",
+          "util_vector_logic_0/Op2"
+        ]
+      },
+      "i2c_master_core_0_ack_error": {
+        "ports": [
+          "i2c_master_core_0/ack_error",
+          "ov7670_id_reader_0/ack_error"
+        ]
+      },
+      "i2c_master_core_0_busy": {
+        "ports": [
+          "i2c_master_core_0/busy",
+          "ov7670_id_reader_0/busy"
+        ]
+      },
+      "i2c_master_core_0_done": {
+        "ports": [
+          "i2c_master_core_0/done",
+          "ov7670_id_reader_0/done"
+        ]
+      },
+      "i2c_master_core_0_rx_data": {
+        "ports": [
+          "i2c_master_core_0/rx_data",
+          "ov7670_id_reader_0/rx_data"
+        ]
+      },
+      "i2c_master_core_0_scl_o": {
+        "ports": [
+          "i2c_master_core_0/scl_o",
+          "my_IOBUF_0/io_in"
+        ]
+      },
+      "i2c_master_core_0_scl_t": {
+        "ports": [
+          "i2c_master_core_0/scl_t",
+          "my_IOBUF_0/io_t"
+        ]
+      },
+      "i2c_master_core_0_sda_o": {
+        "ports": [
+          "i2c_master_core_0/sda_o",
+          "my_IOBUF_1/io_in"
+        ]
+      },
+      "i2c_master_core_0_sda_t": {
+        "ports": [
+          "i2c_master_core_0/sda_t",
+          "my_IOBUF_1/io_t"
+        ]
+      },
+      "my_IOBUF_0_io_out": {
+        "ports": [
+          "my_IOBUF_0/io_out",
+          "i2c_master_core_0/sda_i"
+        ]
+      },
+      "my_IOBUF_1_io_out": {
+        "ports": [
+          "my_IOBUF_1/io_out",
+          "i2c_master_core_0/scl_i"
+        ]
+      },
+      "ov7670_id_reader_0_gen_start": {
+        "ports": [
+          "ov7670_id_reader_0/gen_start",
+          "i2c_master_core_0/gen_start"
+        ]
+      },
+      "ov7670_id_reader_0_id_fail_led": {
+        "ports": [
+          "ov7670_id_reader_0/id_fail_led",
+          "ila_0/probe0"
+        ]
+      },
+      "ov7670_id_reader_0_id_ok_led": {
+        "ports": [
+          "ov7670_id_reader_0/id_ok_led",
+          "id_ok_LED"
+        ]
+      },
+      "ov7670_id_reader_0_nack_on_read": {
+        "ports": [
+          "ov7670_id_reader_0/nack_on_read",
+          "i2c_master_core_0/nack_on_read"
+        ]
+      },
+      "ov7670_id_reader_0_pid_val": {
+        "ports": [
+          "ov7670_id_reader_0/pid_val",
+          "ila_0/probe2"
+        ]
+      },
+      "ov7670_id_reader_0_probe_busy": {
+        "ports": [
+          "ov7670_id_reader_0/probe_busy",
+          "ila_0/probe1"
+        ]
+      },
+      "ov7670_id_reader_0_rw_bit": {
+        "ports": [
+          "ov7670_id_reader_0/rw_bit",
+          "i2c_master_core_0/rw_bit"
+        ]
+      },
+      "ov7670_id_reader_0_start_txn": {
+        "ports": [
+          "ov7670_id_reader_0/start_txn",
+          "i2c_master_core_0/start_txn"
+        ]
+      },
+      "ov7670_id_reader_0_stop_bit": {
+        "ports": [
+          "ov7670_id_reader_0/stop_bit",
+          "i2c_master_core_0/stop_bit"
+        ]
+      },
+      "ov7670_id_reader_0_tx_data": {
+        "ports": [
+          "ov7670_id_reader_0/tx_data",
+          "i2c_master_core_0/tx_data"
+        ]
+      },
+      "ov7670_id_reader_0_ver_val": {
+        "ports": [
+          "ov7670_id_reader_0/ver_val",
+          "ila_0/probe3"
+        ]
+      },
+      "reset_rtl_0_1": {
+        "ports": [
+          "reset_0",
+          "button_debouncer_0/rst_n",
+          "clk_wiz_0/resetn",
+          "i2c_master_core_0/rst_n",
+          "ov7670_id_reader_0/rst_n"
+        ]
+      },
+      "util_vector_logic_0_Res": {
+        "ports": [
+          "util_vector_logic_0/Res",
+          "ov7670_id_reader_0/start_btn"
+        ]
+      },
+      "util_vector_logic_1_Res": {
+        "ports": [
+          "util_vector_logic_1/Res",
+          "button_debouncer_0/btn_in"
+        ]
+      }
+    }
   }
 }

@@ -1,0 +1,9 @@
+0.7
+2020.2
+Oct 14 2022
+05:20:55
+D:/UT.CE/FPGA/LAB/LAB1/models/i2c_master_core.v,1794923651,verilog,,D:/UT.CE/FPGA/LAB/LAB1/models/sccb_id_reader.v,,i2c_master_core,,,,,,,,
+D:/UT.CE/FPGA/LAB/LAB1/models/ov7670_sccb_golden.v,1791214564,verilog,,D:/UT.CE/FPGA/LAB/LAB1/models/tb_sccb.v,,ov7670_sccb_golden,,,,,,,,
+D:/UT.CE/FPGA/LAB/LAB1/models/sccb_id_reader.v,1794928839,verilog,,D:/UT.CE/FPGA/LAB/LAB1/models/ov7670_sccb_golden.v,,ov7670_id_reader,,,,,,,,
+,,,,,,sccb_env;tb_sccb,,,,,,,,
+,,,,,,,,,,,,,,

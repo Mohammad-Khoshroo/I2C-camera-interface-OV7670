@@ -1,0 +1,1 @@
+-top "tb_sccb" -snapshot "tb_sccb_snap" 
